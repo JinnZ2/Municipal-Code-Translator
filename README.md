@@ -44,7 +44,7 @@ This tool:
 
 ```bash
 # Install
-git clone https://github.com/yourusername/municipal-code-translator.git
+git clone https://github.com/JinnZ2/municipal-code-translator.git
 cd municipal-code-translator
 pip install -r requirements.txt
 
