@@ -8,29 +8,28 @@ Municipal Code Translator is a Python tool that translates zoning laws, building
 
 ```
 Municipal-Code-Translator/
-├── municipal-translator.py   # Main application (single-file CLI tool)
+├── municipal_translator.py   # Main application (single-file tool, importable module)
+├── requirements.txt          # Python dependencies
+├── .gitignore                # Git ignore rules
 ├── README.md                 # Project documentation and usage examples
 ├── LICENSE                   # MIT License
 └── CLAUDE.md                 # This file
 ```
 
-This is a minimal, single-file Python project. All logic lives in `municipal-translator.py`.
+Single-file Python project. All logic lives in `municipal_translator.py`.
 
-## Naming Convention
+## Naming Conventions
 
-- **Kebab-case** for filenames (e.g. `municipal-translator.py`)
-- **snake_case** for Python identifiers (functions, variables, methods) per PEP 8
-- **PascalCase** for class names per PEP 8
+- **snake_case** for filenames, functions, variables, methods (PEP 8)
+- **PascalCase** for class names (PEP 8)
 - Private/internal methods prefixed with `_` (e.g. `_load_municipal_jargon`)
-- Code pattern keys use kebab-case (e.g. `'business-licensing'`)
 
 ## Tech Stack
 
 - **Language**: Python 3.7+
-- **Dependencies** (no `requirements.txt` yet — listed in README only):
+- **Dependencies** (see `requirements.txt`):
   - `requests` — HTTP requests / web scraping
   - `beautifulsoup4` (`bs4`) — HTML parsing
-  - `pandas` — data processing
 - **Standard library**: `re`, `json`, `time`, `urllib.parse`, `pathlib`, `dataclasses`, `typing`, `argparse`
 
 ## Key Architecture
@@ -39,48 +38,71 @@ This is a minimal, single-file Python project. All logic lives in `municipal-tra
 - `MunicipalTranslationResult` — dataclass holding translation output: original text, plain English, actionable lists (what you can/cannot do, permits, deadlines, fees, contacts, next steps), confidence score, code type, and municipality.
 
 ### Main Class: `MunicipalCodeTranslator`
-- Initializes internal dictionaries at construction time via private loader methods:
-  - `_load_municipal_jargon()` — term translations (zoning, building, admin, fees, business licensing)
-  - `_load_code_patterns()` — regex patterns for detecting municipal code types (zoning, building, business-licensing, housing)
-  - `_load_zoning_codes()` — zoning designation mappings (R-1, C-2, M-1, etc.)
-  - `_load_permit_keywords()` — phrases indicating permit requirements
-- Public translation methods:
-  - `detect_code_type(text)` — scores text against code patterns to classify it
-  - `translate_jargon(text)` — replaces jargon terms with plain English
-  - `extract_permits(text)` — finds sentences containing permit keywords
-  - `extract_fees(text)` — finds dollar amounts in context
-  - `extract_deadlines(text)` — finds deadline/timeframe references
-  - `translate_municipal_code(text, municipality)` — main entry point, returns `MunicipalTranslationResult`
+
+**Private loader methods** (called at init):
+- `_load_municipal_jargon()` — term translations (zoning, building, admin, fees, business licensing)
+- `_load_code_patterns()` — regex patterns for detecting municipal code types
+- `_load_zoning_codes()` — zoning designation mappings (R-1, C-2, M-1, etc.)
+- `_load_permit_keywords()` — phrases indicating permit requirements
+
+**Public extraction methods:**
+- `detect_code_type(text)` — scores text against code patterns to classify it
+- `translate_jargon(text)` — replaces jargon terms with plain English
+- `extract_permits(text)` — finds sentences containing permit keywords
+- `extract_fees(text)` — finds dollar amounts in context
+- `extract_deadlines(text)` — finds deadline/timeframe references
+- `extract_allowed(text)` — finds statements about what is permitted
+- `extract_prohibited(text)` — finds statements about what is prohibited
+- `extract_contact_info(text)` — finds phone numbers, emails, department references
+
+**Private helpers:**
+- `_compute_confidence(text, plain_english)` — dynamic confidence score based on jargon recognition ratio
+
+**Main entry point:**
+- `translate_municipal_code(text, municipality)` — orchestrates all extractors, returns `MunicipalTranslationResult`
 
 ## CLI Usage
 
 ```bash
 # Process a local text file
-python municipal-translator.py --file "city-zoning-code.txt" --municipality "Your City"
+python municipal_translator.py --file "city-zoning-code.txt" --municipality "Your City"
 
 # Scrape a city website
-python municipal-translator.py --url "https://cityname.gov/municipal-code" --municipality "Your City"
+python municipal_translator.py --url "https://cityname.gov/municipal-code" --municipality "Your City"
 
 # Process text directly
-python municipal-translator.py --text "Your municipal code text here"
+python municipal_translator.py --text "Your municipal code text here"
+```
+
+## Python API
+
+```python
+from municipal_translator import MunicipalCodeTranslator
+translator = MunicipalCodeTranslator()
+result = translator.translate_municipal_code(code_text, municipality="Your City")
+```
+
+## Install
+
+```bash
+pip install -r requirements.txt
 ```
 
 ## Build / Test / Lint
 
-**None configured.** There are currently no tests, linting, CI/CD, or build commands. No `requirements.txt`, `setup.py`, or `pyproject.toml` exists.
+No test framework, linting, or CI/CD is configured yet.
 
 ## Code Conventions
 
 - Type hints on all method signatures (PEP 484)
 - Docstrings on all methods
-- Single class per module pattern
+- Single class per module
 - Dictionary-heavy data modeling for jargon/pattern lookup
 - `@dataclass` for structured results
 - Imports grouped: standard library first, then third-party (PEP 8)
 
 ## Development Notes
 
-- The project is early-stage with a well-defined vision.
 - When contributing, maintain the plain-English translation philosophy — jargon mappings should be accessible to non-experts.
 - Keep the single-file architecture unless complexity demands splitting.
-- Note: because the filename uses kebab-case, it cannot be imported as a Python module directly. It is intended as a CLI script.
+- The file is both a CLI script and an importable module.

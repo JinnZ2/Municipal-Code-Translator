@@ -16,7 +16,6 @@ from pathlib import Path
 
 import requests
 from bs4 import BeautifulSoup
-import pandas as pd
 
 
 @dataclass
@@ -188,6 +187,53 @@ class MunicipalCodeTranslator:
         )
         return deadline_pattern.findall(text)
 
+    def extract_allowed(self, text: str) -> List[str]:
+        """Extract statements about what is permitted or allowed."""
+        pattern = re.compile(
+            r'[^.]*(?:shall be permitted|is permitted|are permitted|may be used|'
+            r'is allowed|are allowed|shall be allowed|may include|'
+            r'permitted use|permitted as of right|by right)[^.]*\.',
+            re.IGNORECASE,
+        )
+        return [s.strip() for s in pattern.findall(text)]
+
+    def extract_prohibited(self, text: str) -> List[str]:
+        """Extract statements about what is prohibited or restricted."""
+        pattern = re.compile(
+            r'[^.]*(?:shall not|is prohibited|are prohibited|is not permitted|'
+            r'are not permitted|may not|is not allowed|are not allowed|'
+            r'prohibited use|no person shall|it shall be unlawful)[^.]*\.',
+            re.IGNORECASE,
+        )
+        return [s.strip() for s in pattern.findall(text)]
+
+    def extract_contact_info(self, text: str) -> List[str]:
+        """Extract phone numbers, email addresses, and department references."""
+        contacts: List[str] = []
+        phone_pattern = re.compile(r'\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}')
+        email_pattern = re.compile(r'[\w.+-]+@[\w-]+\.[\w.-]+')
+        dept_pattern = re.compile(
+            r'[^.]*(?:department of|planning division|building division|'
+            r'city clerk|public works|contact)[^.]*\.',
+            re.IGNORECASE,
+        )
+        contacts.extend(phone_pattern.findall(text))
+        contacts.extend(email_pattern.findall(text))
+        contacts.extend(s.strip() for s in dept_pattern.findall(text))
+        return contacts
+
+    def _compute_confidence(self, text: str, plain_english: str) -> float:
+        """Compute a confidence score based on how much jargon was recognized."""
+        if not text:
+            return 0.0
+        matched = sum(
+            1 for term in self.municipal_jargon
+            if re.search(re.escape(term), text, re.IGNORECASE)
+        )
+        total_sentences = max(text.count('.'), 1)
+        ratio = min(matched / total_sentences, 1.0)
+        return round(0.3 + 0.7 * ratio, 2)
+
     def translate_municipal_code(
         self, text: str, municipality: str = "Unknown"
     ) -> MunicipalTranslationResult:
@@ -197,18 +243,22 @@ class MunicipalCodeTranslator:
         permits = self.extract_permits(text)
         fees = self.extract_fees(text)
         deadlines = self.extract_deadlines(text)
+        allowed = self.extract_allowed(text)
+        prohibited = self.extract_prohibited(text)
+        contacts = self.extract_contact_info(text)
+        confidence = self._compute_confidence(text, plain_english)
 
         return MunicipalTranslationResult(
             original_text=text,
             plain_english=plain_english,
-            what_you_can_do=[],
-            what_you_cannot_do=[],
+            what_you_can_do=allowed,
+            what_you_cannot_do=prohibited,
             permits_required=permits,
             deadlines=deadlines,
             fees=fees,
-            contact_info=[],
+            contact_info=contacts,
             next_steps=[],
-            confidence_score=0.5,
+            confidence_score=confidence,
             code_type=code_type,
             municipality=municipality,
         )
