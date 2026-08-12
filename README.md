@@ -49,13 +49,13 @@ cd municipal-code-translator
 pip install -r requirements.txt
 
 # Translate a municipal document
-python municipal_translator.py --file zoning-ordinance.pdf
+python municipal_translator.py --file zoning-ordinance.txt
 
 # Scrape your city's website
 python municipal_translator.py --url "https://yourcity.gov/zoning-code"
 
-# Get a beautiful report
-open municipal_translations/your_city_zoning.html
+# Try it on the bundled sample
+python municipal_translator.py --file examples/sample_ordinance.txt --municipality "Oakridge"
 ```
 
 ## 🏠 Perfect For
@@ -105,25 +105,56 @@ pip install -r requirements.txt
 **Requirements:**
 
 - Python 3.7+
-- BeautifulSoup4 (web scraping)
-- Requests (API calls)
-- Pandas (data processing)
-- PyPDF2/PyMuPDF (PDF processing)
+- Requests + BeautifulSoup4 — only needed for `--url`. File and text input run
+  on the standard library alone.
+
+**PDFs:** this tool reads text, not PDFs. Convert first, then translate:
+
+```bash
+pdftotext zoning-ordinance.pdf zoning-ordinance.txt
+python municipal_translator.py --file zoning-ordinance.txt
+```
 
 ## 📖 Usage Examples
 
 ### Command Line
 
 ```bash
-# Process a local PDF file
-python municipal_translator.py --file "city-zoning-code.pdf" --output "my-zoning-explained"
+# Process a local text file, saving a .txt and .json report
+python municipal_translator.py --file "city-zoning-code.txt" --output "my-zoning-explained"
 
 # Scrape city website
 python municipal_translator.py --url "https://cityname.gov/municipal-code" --municipality "Your City"
 
-# Process text directly
-python municipal_translator.py --text "Your municipal code text here"
+# Process text directly, as JSON
+python municipal_translator.py --text "Your municipal code text here" --format json
 ```
+
+### Deeper analysis: the Regulatory Intelligence Engine
+
+Beyond the plain-English translation, this answers *why the rule exists* and
+*what it will actually cost you*:
+
+```bash
+python regulatory_intelligence_engine.py \
+    --file examples/sample_ordinance.txt \
+    --municipality "City of Austin" \
+    --sqft 800 --valuation 150000
+```
+
+It adds:
+
+- **Stated intent** — the ordinance's own purpose clause, quoted back to you
+- **Root cause analysis** — the systemic driver (housing supply, fire safety,
+  stormwater, parking, infrastructure, nuisance)
+- **Fee estimation** — flat fees, per-square-foot rates, per-unit charges, and
+  percentage-of-valuation fees, totalled for *your* project. If a fee needs an
+  input you did not supply, the total is flagged as an undercount rather than
+  quietly reported as low.
+- **Citation graph** — which local, state, federal, and industry standards this
+  section depends on
+- **Auditability index** — how much of the policy is measurable at all, which is
+  a useful signal about how much is left to official discretion
 
 ### Python API
 
@@ -137,6 +168,30 @@ print(f"What you can do: {result.what_you_can_do}")
 print(f"Permits needed: {result.permits_required}")
 print(f"Fees: {result.fees}")
 print(f"Next steps: {result.next_steps}")
+
+# Full JSON, ready to store or serve
+print(result.to_json())
+```
+
+```python
+from regulatory_intelligence_engine import RegulatoryIntelligenceEngine
+
+engine = RegulatoryIntelligenceEngine()
+report = engine.analyze(
+    your_code_text,
+    municipality="Your City",
+    project_params={"sqft": 800, "valuation": 150000},
+)
+
+print(report.stated_intent)
+print(report.root_causes)
+print(f"Estimated fees: ${report.total_estimated_fee:,.2f}")
+```
+
+### Running the tests
+
+```bash
+python -m unittest discover -s tests
 ```
 
 ## 🏛️ How It Works
@@ -149,9 +204,13 @@ print(f"Next steps: {result.next_steps}")
 
 ### 2. **Jargon Translation**
 
-- **500+ municipal terms** translated into plain English
-- Context-aware replacements preserve meaning
-- Keeps original terms in parentheses for reference
+- Municipal jargon, legalese, and zoning designations translated in one pass
+- **Replacements never change the meaning of a rule.** "No person shall
+  construct" becomes "no one may construct", not "no person must construct" —
+  the naive `shall` → `must` swap inverts prohibitions, which is the most
+  dangerous possible bug in a tool like this.
+- Single-pass substitution, so an expanded term is never re-expanded
+- Keeps the original term in brackets so you can match it back to the code
 
 ### 3. **Information Extraction**
 
@@ -221,6 +280,9 @@ The best way to improve this tool:
 1. Try it on your city’s actual codes
 1. Report what works well and what needs improvement
 1. Share anonymized examples of confusing language
+
+Bug fixes should come with a regression test in `tests/` — that directory
+doubles as the record of parsing failures this tool has already been burned by.
 
 ## 📊 Supported Cities
 
