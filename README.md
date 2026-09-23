@@ -5,7 +5,7 @@
 Stop getting lost in bureaucratic maze language. This tool translates zoning laws, building codes, and municipal ordinances into plain English so you can actually understand what you can do with your property.
 
 ![Python Version](https://img.shields.io/badge/python-3.7+-blue.svg)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
+![License](https://img.shields.io/badge/license-CC0_1.0-lightgrey.svg)
 ![Municipal Codes](https://img.shields.io/badge/municipal-codes-supported-brightgreen.svg)
 
 ## 🏛️ Why This Matters
@@ -248,7 +248,7 @@ Currently optimized for common municipal code patterns across:
 
 ## 📄 License
 
-MIT License - Use it, modify it, share it. Let’s democratize local government together.
+CC0 1.0 Universal - Use it, modify it, share it. Let’s democratize local government together.
 
 ## 🙏 Acknowledgments
 
