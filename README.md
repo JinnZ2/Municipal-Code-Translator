@@ -1,3 +1,6 @@
+> Read first: [READING_PROTOCOL.md](READING_PROTOCOL.md) (how to read this repo).
+> Map, not prescription. Errors are data. Check it. Built for the need, revisable.
+
 # Municipal Code Translator
 
 **Making Local Government Understandable**
